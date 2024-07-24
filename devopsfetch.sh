@@ -12,12 +12,12 @@ show_help() {
     echo "Retrieve and display system information."
     echo
     echo "Options:"
-    echo "  -p, --port [PORT]    Display port information"
-    echo "  -d, --docker [CONTAINER]  Display Docker information"
-    echo "  -n, --nginx [DOMAIN] Display Nginx information"
-    echo "  -u, --users [USER]   Display user information"
-    echo "  -t, --time [START END]     Display activities within a time range (format: 'YYYY-MM-DD' or 'YYYY-MM-DD YYYY-MM-DD')"
-    echo "  -h, --help           Display this help message"
+    echo "  -p, --port [PORT]           Display port information"
+    echo "  -d, --docker [CONTAINER]    Display Docker information"
+    echo "  -n, --nginx [DOMAIN]        Display Nginx information"
+    echo "  -u, --users [USER]          Display user information"
+    echo "  -t, --time [START END]      Display activities within a time range (format: 'YYYY-MM-DD' or 'YYYY-MM-DD YYYY-MM-DD')"
+    echo "  -h, --help                  Display this help message"
 }
 
 format_table() {
