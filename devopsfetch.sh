@@ -364,12 +364,12 @@ get_nginx_info() {
     (
         echo -e "Server Name\tConfiguration File\tListen Ports\tSSL Enabled\tLocations\tProxy Pass"
         extract_nginx_config "$server_name"
-    ) | format_table 30 "2:50,6:70"
+    ) | format_table 20 "2:50,6:70"
     else
     (
         echo -e "Server Name\tConfig File\tProxy Pass"
         list_all_servers
-    ) | format_table
+    ) | format_table 40
     fi
 }
 
