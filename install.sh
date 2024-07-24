@@ -1,5 +1,9 @@
 #!/bin/bash
 
+LOG_FILE="/var/log/devopsfetch.log"
+
+touch $LOG_FILE
+
 # Check if the script is run as root
 if [[ $UID != 0 ]]; then
   echo "This script must be run as root or with sudo privileges"
@@ -91,10 +95,6 @@ chmod +x /usr/local/bin/devopsfetch
 # Create and copy the monitoring script
 cat << EOF > /usr/local/bin/devopsfetch_monitor.sh
 #!/bin/bash
-
-LOG_FILE="/var/log/devopsfetch.log"
-
-mkdir $LOG_FILE
 
 while true; do
     echo "--- $(date) ---" >> "$LOG_FILE"
