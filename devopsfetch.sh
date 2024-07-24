@@ -92,10 +92,94 @@ format_table() {
 # Function to get port information
 get_ports() {
     local port=$1
+    
     if [ -n "$port" ]; then
-        ss -tlpn | grep ":$port" | awk '{print $4 "\t" $6}' | sed 's/users:(("//g' | sed 's/",.*//g' | (echo -e "Local Address:Port\tProcess" && cat) | format_table
+        ss -tulpne | grep ":$port" | awk '
+        BEGIN { 
+            OFS="\t"
+            print "Port\tUser\tPID\tPeer\tCGroup\tType\tIPv6\tState"
+        }
+        {
+            split($1, protocol, "")
+            split($5, local, ":")
+            split($6, remote, ":")
+            
+            port = local[length(local)]
+            remote_address = $6
+            state = $2
+            protocol_full = (protocol[1] == "t") ? "tcp" : "udp"
+            ipv6 = ($5 ~ /\[/) ? "true" : "false"
+            
+            # Extract service name, PID, and cgroup
+            match($0, /users:\(\("([^"]+)",pid=([0-9]+),[^)]+\)\).*cgroup:([^ ]+)/, arr)
+            service_name = arr[1]
+            pid = arr[2]
+            cgroup = arr[3]
+            
+            key = port protocol_full
+            
+            if (!(key in seen)) {
+                seen[key] = 1
+                data[key] = port OFS service_name OFS pid OFS remote_address OFS cgroup OFS protocol_full OFS ipv6 OFS state
+            } else {
+                split(data[key], fields, OFS)
+                fields[4] = fields[4] " " remote_address
+                fields[7] = (fields[7] == "true" || ipv6 == "true") ? "true" : "false"
+                data[key] = join(fields, OFS)
+            }
+        }
+        END {
+            for (key in data) {
+                print data[key]
+            }
+        }
+        function join(array, sep,    result, i) {
+            for (i in array)
+                result = result sep array[i]
+            return substr(result, length(sep) + 1)
+        }
+        ' | format_tables
     else
-        ss -tlpn | awk 'NR>1 {print $4 "\t" $6}' | sed 's/users:(("//g' | sed 's/",.*//g' | (echo -e "Local Address:Port\tProcess" && cat) | format_table
+        ss -tulpne | awk '
+        BEGIN { 
+            OFS="\t"
+            print "Port\tUser\tType\tIPv6\tState"
+        }
+        NR>1 {
+            split($1, protocol, "")
+            split($5, local, ":")
+            
+            port = local[length(local)]
+            state = $2
+            protocol_full = (protocol[1] == "t") ? "tcp" : "udp"
+            ipv6 = ($5 ~ /\[/) ? "true" : "false"
+            
+            # Extract service name
+            match($0, /users:\(\("([^"]+)"/, arr)
+            service_name = arr[1]
+            
+            key = port protocol_full
+            
+            if (!(key in seen)) {
+                seen[key] = 1
+                data[key] = port OFS service_name OFS protocol_full OFS ipv6 OFS state
+            } else {
+                split(data[key], fields, OFS)
+                fields[4] = (fields[4] == "true" || ipv6 == "true") ? "true" : "false"
+                data[key] = join(fields, OFS)
+            }
+        }
+        END {
+            for (key in data) {
+                print data[key]
+            }
+        }
+        function join(array, sep,    result, i) {
+            for (i in array)
+                result = result sep array[i]
+            return substr(result, length(sep) + 1)
+        }
+        ' | format_tables
     fi
 }
 
@@ -311,22 +395,37 @@ get_user_info() {
 
 # Function to get activities within a time range
 get_time_range_activities() {
-    local start_time="$1"
-    local end_time="$2"
-    
-    (
-        echo -e "Timestamp\tUser\tProcess\tMessage"
-        journalctl --since "$start_time" --until "$end_time" | 
-        awk '
-        {
-            timestamp = $1 " " $2 " " $3
-            server = $4
-            process = $5
-            $1=$2=$3=$4=$5=""
-            message = substr($0,6)
-            printf "%s\t%s\t%s\t%s\n", timestamp, server, process, message
-        }'
-    ) | format_table
+    local start_date
+    local end_date
+
+    if [ $# -eq 0 ]; then
+        echo "Please specify a time range or date"
+        return 1
+    elif [ $# -eq 1 ]; then
+        start_date=$(date -d "$1" +"%Y-%m-%d 00:00:00")
+        end_date=$(date -d "$1 +1 day" +"%Y-%m-%d 00:00:00")    
+    elif [ $# -eq 2 ]; then
+        start_date=$(date -d "$1" +"%Y-%m-%d 00:00:00")
+        end_date=$(date -d "$2 + 1 day" +"%Y-%m-%d 00:00:00")
+    else
+        echo "Invalid number of arguments for the time range flag"
+        return 1
+    fi
+
+    journalctl --since "$start_date" --until "$end_date" |
+    awk '
+    BEGIN {
+    print "Timestamp|User|Process|Message"
+    }
+    {
+        timestamp = $1 " " $2 " " $3
+        server = $4
+        process = $5
+        $1=$2=$3=$4=$5=""
+        message = substr($0,6)
+        print timestamp "|" server "|" process "|" message
+    }' | column -t -s '|' 
+
 }
 
 # Main execution
