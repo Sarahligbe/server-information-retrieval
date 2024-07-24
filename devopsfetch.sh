@@ -16,7 +16,7 @@ show_help() {
     echo "  -d, --docker [CONTAINER]  Display Docker information"
     echo "  -n, --nginx [DOMAIN] Display Nginx information"
     echo "  -u, --users [USER]   Display user information"
-    echo "  -t, --time [START END]     Display activities within a time range (format: YYYY-MM-DD YYYY-MM-DD)"
+    echo "  -t, --time [START END]     Display activities within a time range (format: 'YYYY-MM-DD' or 'YYYY-MM-DD YYYY-MM-DD')"
     echo "  -h, --help           Display this help message"
 }
 

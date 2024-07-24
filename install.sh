@@ -79,4 +79,63 @@ else
     sudo systemctl start nginx
 fi
 
-echo "Installation complete. Please reboot your system to ensure all changes take effect."
+cp devopsfetch.sh /usr/local/bin/devopsfetch
+chmod +x /usr/local/bin/devopsfetch
+
+# Create and copy the monitoring script
+cat << EOF > /usr/local/bin/devopsfetch_monitor.sh
+#!/bin/bash
+
+LOG_FILE="/var/log/devopsfetch.log"
+
+while true; do
+    echo "--- $(date) ---" >> "$LOG_FILE"
+    echo "Ports:" >> "$LOG_FILE"
+    devopsfetch -p >> "$LOG_FILE"
+    echo "Docker:" >> "$LOG_FILE"
+    devopsfetch -d >> "$LOG_FILE"
+    echo "Nginx:" >> "$LOG_FILE"
+    devopsfetch -n >> "$LOG_FILE"
+    echo "Users:" >> "$LOG_FILE"
+    devopsfetch -u >> "$LOG_FILE"
+    echo "" >> "$LOG_FILE"
+    sleep 3000
+done
+EOF
+
+chmod +x /usr/local/bin/devopsfetch_monitor.sh
+
+# Create systemd service file
+cat << EOF > /etc/systemd/system/devopsfetch.service
+[Unit]
+Description=DevOpsFetch Monitoring Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/devopsfetch_monitor.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Reload systemd, enable and start the service
+systemctl daemon-reload
+systemctl enable devopsfetch.service
+systemctl start devopsfetch.service
+
+# Set up log rotation
+cat << EOF > /etc/logrotate.d/devopsfetch
+/var/log/devopsfetch.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+}
+EOF
+
+
+echo "DevOpsFetch has been installed and the monitoring service has been started."
