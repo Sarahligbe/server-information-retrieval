@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if the script is run as root
+if [[ $UID != 0 ]]; then
+  echo "This script must be run as root or with sudo privileges"
+  exit 1
+fi
+
 # Function to display help information
 show_help() {
     echo "Usage: devopsfetch [OPTION]"
@@ -15,7 +21,11 @@ show_help() {
 }
 
 format_table() {
-    awk -v BLUE="$(tput setaf 4)" -v BOLD="$(tput bold)" -v RESET="$(tput sgr0)" '
+    local default_width="$1"
+    local custom_widths="$2"
+    
+    awk -v BLUE="$(tput setaf 4)" -v BOLD="$(tput bold)" -v RESET="$(tput sgr0)" \
+        -v DEFAULT_WIDTH="$default_width" -v CUSTOM_WIDTHS="$custom_widths" '
     function print_horiz_line(corner, tee, dash,    i) {
         printf corner
         for (i=1; i<=NF; i++) {
@@ -33,14 +43,26 @@ format_table() {
         return result
     }
 
+    function truncate(str, width) {
+        if (length(str) <= width) return str
+        return substr(str, 1, width - 3) "..."
+    }
+
     BEGIN {
         FS="\t"
         OFS="|"
+        if (DEFAULT_WIDTH == "") DEFAULT_WIDTH = 20
+        split(CUSTOM_WIDTHS, custom_widths, ",")
+        for (i in custom_widths) {
+            split(custom_widths[i], pair, ":")
+            max_widths[pair[1]] = pair[2]
+        }
     }
     NR==1 {
         for (i=1; i<=NF; i++) {
             gsub(/^[ \t]+|[ \t]+$/, "", $i)
-            widths[i] = length($i)
+            max_width = (i in max_widths) ? max_widths[i] : DEFAULT_WIDTH
+            widths[i] = length($i) > max_width ? max_width : length($i)
         }
         header = $0
         next
@@ -49,8 +71,11 @@ format_table() {
     {
         for (i=1; i<=NF; i++) {
             gsub(/^[ \t]+|[ \t]+$/, "", $i)
-            if (length($i) > widths[i]) {
+            max_width = (i in max_widths) ? max_widths[i] : DEFAULT_WIDTH
+            if (length($i) > widths[i] && length($i) <= max_width) {
                 widths[i] = length($i)
+            } else if (length($i) > max_width) {
+                widths[i] = max_width
             }
         }
         rows[++datarows] = $0
@@ -63,7 +88,7 @@ format_table() {
         split(header, header_fields)
         printf "|"
         for (i=1; i<=NF; i++) {
-            printf " %s%s%-*s%s |", BLUE, BOLD, widths[i], header_fields[i], RESET
+            printf " %s%s%-*s%s |", BLUE, BOLD, widths[i], truncate(header_fields[i], widths[i]), RESET
         }
         printf "\n"
         
@@ -75,7 +100,7 @@ format_table() {
             split(rows[row], fields)
             printf "|"
             for (i=1; i<=NF; i++) {
-                printf " %-*s |", widths[i], fields[i]
+                printf " %-*s |", widths[i], truncate(fields[i], widths[i])
             }
             printf "\n"
             if (row < datarows) {
@@ -199,7 +224,7 @@ get_docker_info() {
                 network=$(docker inspect $container --format '{{.HostConfig.NetworkMode}}')
                 echo -e "${line}\t${network}\t${stats}"
             done
-        ) | format_table
+        ) | format_table "7:50"
     else
         # List all images and containers
         (
@@ -210,7 +235,7 @@ get_docker_info() {
             
             # List containers
             docker ps -a --format "{{.ID}}\tContainer\t{{.Names}}\t{{.CreatedAt}}"
-        ) | format_table
+        ) | format_table 30 "4:70"
     fi
 }
 
@@ -339,7 +364,7 @@ get_nginx_info() {
     (
         echo -e "Server Name\tConfiguration File\tListen Ports\tSSL Enabled\tLocations\tProxy Pass"
         extract_nginx_config "$server_name"
-    ) | format_table
+    ) | format_table 30 "2:50,6:70"
     else
     (
         echo -e "Server Name\tConfig File\tProxy Pass"
@@ -417,24 +442,23 @@ get_time_range_activities() {
         start_date=$(date -d "$1" +"%Y-%m-%d 00:00:00")
         end_date=$(date -d "$2 + 1 day" +"%Y-%m-%d 00:00:00")
     else
-        echo "Invalid number of arguments for the time range flag"
+        echo "Invalid number of arguments. Please provide valid arguments in this format 'YYYY-MM-DD' or 'YYYY-MM-DD YYYY-MM-DD'"
         return 1
     fi
 
-    journalctl --since "$start_date" --until "$end_date" |
-    awk '
-    BEGIN {
-    print "Timestamp|User|Process|Message"
-    }
-    {
-        timestamp = $1 " " $2 " " $3
-        server = $4
-        process = $5
-        $1=$2=$3=$4=$5=""
-        message = substr($0,6)
-        print timestamp "|" server "|" process "|" message
-    }' | column -t -s '|' 
-
+    (
+        echo -e "Timestamp\tUser\tProcess\tMessage"
+        journalctl --since "$start_date" --until "$end_date" | 
+        awk '
+        {
+            timestamp = $1 " " $2 " " $3
+            server = $4
+            process = $5
+            $1=$2=$3=$4=$5=""
+            message = substr($0,6)
+            printf "%s\t%s\t%s\t%s\n", timestamp, server, process, message
+        }'
+    ) | format_table 20 "1:40,4:70"
 }
 
 # Main execution
