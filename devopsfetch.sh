@@ -427,7 +427,7 @@ get_user_info() {
         get_detailed_user_info "$user"
     ) | format_table
     else
-    echo "Displaying information of all users and their last login time"
+    echo "Displaying information of all non-system users and their last login time"
     (
         echo -e "User\tLast Login\tFrom"
         get_regular_users_lastlog

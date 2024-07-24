@@ -94,6 +94,8 @@ cat << EOF > /usr/local/bin/devopsfetch_monitor.sh
 
 LOG_FILE="/var/log/devopsfetch.log"
 
+mkdir $LOG_FILE
+
 while true; do
     echo "--- $(date) ---" >> "$LOG_FILE"
     echo "Ports:" >> "$LOG_FILE"
