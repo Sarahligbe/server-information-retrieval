@@ -138,7 +138,7 @@ get_ports() {
                 result = result sep array[i]
             return substr(result, length(sep) + 1)
         }
-        ' | format_tables
+        ' | format_table
     else
         ss -tulpne | awk '
         BEGIN { 
@@ -179,7 +179,7 @@ get_ports() {
                 result = result sep array[i]
             return substr(result, length(sep) + 1)
         }
-        ' | format_tables
+        ' | format_table
     fi
 }
 
@@ -199,7 +199,7 @@ get_docker_info() {
                 network=$(docker inspect $container --format '{{.HostConfig.NetworkMode}}')
                 echo -e "${line}\t${network}\t${stats}"
             done
-        ) | format_tables
+        ) | format_table
     else
         # List all images and containers
         (
@@ -210,7 +210,7 @@ get_docker_info() {
             
             # List containers
             docker ps -a --format "{{.ID}}\tContainer\t{{.Names}}\t{{.CreatedAt}}"
-        ) | format_tables
+        ) | format_table
     fi
 }
 
