@@ -40,7 +40,7 @@ DevOpsFetch must be run with root privileges. Use sudo when executing the script
 ```bash
    sudo devopsfetch -h
 ```
-![Help output](images/help)
+![Help output](images/help.png)
 
 This will display the help message with usage information.
 
@@ -48,35 +48,35 @@ This will display the help message with usage information.
 ```bash
    sudo devopsfetch -p [PORT]
 ```
-![port output](images/port)
+![port output](images/port.png)
 This will display information about port 22. If no port is specified, it will show information for all active ports.
 
 3. Docker Information:
 ```bash
    sudo devopsfetch -d [CONTAINER]
 ```
-![docker output](images/docker)
+![docker output](images/devops.png)
 This will display information about the specified Docker container. If no container is specified, it will show information for all containers and images.
 
 4. Nginx Information:
 ```bash
    sudo devopsfetch -n [DOMAIN]
 ```
-![docker output](images/docker)
+![docker output](images/nginx.png)
 This will display Nginx configuration information for the specified domain. If no domain is specified, it will show information for all domains on the server.
 
 5. User Information:
 ```bash
    sudo devopsfetch -u [USER]
 ```
-![docker output](images/docker)
+![docker output](images/user.png)
 This will display detailed information about the specified user. If no user is specified, it will show information for all regular users on the system.
 
 6. Time Range Activities:
 ```bash
    sudo devopsfetch -t [START_DATE] [END_DATE]
 ```
-![docker output](images/docker)
+![docker output](images/time.png)
 This will display system activities within the specified date range. If only one date is provided, it will show activities for that specific day.
 
 ## Logging Mechanism:
