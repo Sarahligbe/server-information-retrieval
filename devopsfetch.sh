@@ -215,6 +215,7 @@ get_docker_info() {
     local container=$1
     
     if [ -n "$container" ]; then
+        echo "Displaying information for $container docker container"
         # Get basic container info
         (
             echo -e "ID\tName\tImage\tStatus\tPorts\tNetwork Name\tStats"
@@ -228,6 +229,7 @@ get_docker_info() {
             done
         ) | format_table "7:50"
     else
+        echo "Displaying information for all containers and images"
         # List all images and containers
         (
             echo -e "ID\tType\tName\tCreated"
@@ -363,11 +365,13 @@ list_all_servers() {
 get_nginx_info() {
     local server_name="$1"
     if [ -n "$server_name" ]; then
+    echo "Displaying nginx config information for the $server_name domain"
     (
         echo -e "Server Name\tConfiguration File\tListen Ports\tSSL Enabled\tLocations\tProxy Pass"
         extract_nginx_config "$server_name"
     ) | format_table 20 "2:50,6:70"
     else
+    echo "Displaying information for all domains on the server"
     (
         echo -e "Server Name\tConfig File\tProxy Pass"
         list_all_servers
@@ -417,11 +421,13 @@ get_regular_users_lastlog() {
 get_user_info() {
     local user="$1"
     if [ -n "$user" ]; then
+    echo "Displaying information on your user - $user"
     (
         echo -e "User\tGroups\tHome Directory\tShell\tLast Logged In"
         get_detailed_user_info "$user"
     ) | format_table
     else
+    echo "Displaying information of all users and their last login time"
     (
         echo -e "User\tLast Login\tFrom"
         get_regular_users_lastlog
@@ -447,7 +453,6 @@ get_time_range_activities() {
         echo "Invalid number of arguments. Please provide valid arguments in this format 'YYYY-MM-DD' or 'YYYY-MM-DD YYYY-MM-DD'"
         return 1
     fi
-
     (
         echo -e "Timestamp\tUser\tProcess\tMessage"
         journalctl --since "$start_date" --until "$end_date" | 
