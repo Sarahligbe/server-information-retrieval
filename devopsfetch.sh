@@ -119,6 +119,7 @@ get_ports() {
     local port=$1
     
     if [ -n "$port" ]; then
+        echo "Displaying information for port $port"
         ss -tulpne | grep ":$port" | awk '
         BEGIN { 
             OFS="\t"
@@ -165,6 +166,7 @@ get_ports() {
         }
         ' | format_table
     else
+        echo "Displaying all active ports"
         ss -tulpne | awk '
         BEGIN { 
             OFS="\t"

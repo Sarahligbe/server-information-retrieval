@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if the script is run as root
+if [[ $UID != 0 ]]; then
+  echo "This script must be run as root or with sudo privileges"
+  exit 1
+fi
+
 # Function to check if a package is available in the repositories
 check_package_availability() {
     if ! apt-cache show "$1" &> /dev/null; then
