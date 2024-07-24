@@ -304,24 +304,33 @@ list_all_servers() {
     local nginx_output
     nginx_output=$(nginx -T 2>&1)
 
-        echo "$nginx_output" | awk '
-            /^# configuration file/ {
-                config_file = $NF
-                sub(/:$/, "", config_file)
-            }
-            /server_name/ {
-                server_name = $2
-                sub(/;$/, "", server_name)
-            }
-            /proxy_pass/ {
-                proxy_pass = $2
-                sub(/;$/, "", proxy_pass)
-                if (server_name != "" && config_file != "") {
-                    print server_name "\t" config_file "\t" proxy_pass
-                    server_name = ""
-                }
-            }
-        ' | sort -u
+    # First, extract server names and config files
+    server_info=$(echo "$nginx_output" | awk '
+    BEGIN { OFS="\t" }
+    /^# configuration file/ {
+        config_file = $NF
+        sub(/:$/, "", config_file)
+    }
+    /^\s*server_name\s+/ {
+        for (i=2; i<=NF; i++) {
+            name = $i
+            sub(/;$/, "", name)
+            print name, config_file
+        }
+    }
+    ' | sort -u)
+
+    # Process each server
+    while IFS=$'\t' read -r server_name config_file; do
+        # Call extract_nginx_config to get proxy passes
+        proxy_passes=$(extract_nginx_config "$server_name" | cut -f6)
+        
+        # If proxy_passes is empty, use "-"
+        proxy_passes=${proxy_passes:-"-"}
+
+        # Print the result
+        echo -e "${server_name}\t${config_file}\t${proxy_passes}"
+    done <<< "$server_info"
 }
 
 get_nginx_info() {
@@ -443,13 +452,8 @@ case "$1" in
         get_user_info "$2"
         ;;
     -t|--time)
-        if [ "$#" -ne 3 ]; then
-            echo "Error: Time range requires start and end times."
-            echo "Usage: $0 -t|--time <start_time> <end_time>"
-            echo "Time format should be: YYYY-MM-DD"
-            exit 1
-        fi
-        get_time_range_activities "$2" "$3"
+        shift
+        get_time_range_activities "$@"
         ;;
     -h|--help)
         show_help
