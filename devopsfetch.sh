@@ -23,9 +23,8 @@ show_help() {
 format_table() {
     local default_width="$1"
     local custom_widths="$2"
-    
-    awk -v BLUE="$(tput setaf 4)" -v BOLD="$(tput bold)" -v RESET="$(tput sgr0)" \
-        -v DEFAULT_WIDTH="$default_width" -v CUSTOM_WIDTHS="$custom_widths" '
+
+    awk -v BLUE='\033[34m' -v BOLD='\033[1m' -v RESET='\033[0m' -v DEFAULT_WIDTH="$default_width" -v CUSTOM_WIDTHS="$custom_widths" '
     function print_horiz_line(corner, tee, dash,    i) {
         printf corner
         for (i=1; i<=NF; i++) {
